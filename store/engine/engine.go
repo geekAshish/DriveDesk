@@ -101,7 +101,59 @@ func (e EnginStore) CreateEngine(ctx context.Context, engineReq *models.EngineRe
 }
 
 func (e EnginStore) UpdateEngine(ctx context.Context, id string, engineReq *models.EngineRequest) (models.Engine, error) {
+	enginID, err := uuid.Parse(id);
+	if err != nil {
+		return models.Engine{}, fmt.Errorf("invalid engine id format: %w", id)
+	}
 
+	tx, err := e.db.BeginTx(ctx, nil)
+	if err != nil {
+		return models.Engine{}, err
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				fmt.Printf("transaction rollback error: %v/n", rbErr)
+			}
+		} else {
+			if cmErr := tx.Commit(); cmErr != nil {
+				fmt.Printf("transaction commit error: %v/n", cmErr)
+			}
+		}
+
+		err = tx.Commit()
+	}()
+
+	result, err := tx.ExecContext(
+		ctx,
+		`UPDATE engine SET displacement=$1, no_of_cyclinder=$2, car_range=$3 WHERE id=$4`,
+		engineReq.Dispacement,
+		engineReq.NoOfCylinders,
+		engineReq.CarRange,
+	)
+
+	if err != nil {
+		return models.Engine{}, err;
+	}
+
+	rowAffected, err := result.RowsAffected()
+
+	if err != nil {
+		return models.Engine{}, err
+	}
+	if rowAffected == 0 {
+		return models.Engine{}, errors.New("engine with id not found")
+	}
+
+	engine := models.Engine{
+		EngineID:      enginID, 
+		Dispacement:   engineReq.Dispacement,
+		NoOfCylinders: engineReq.NoOfCylinders,
+		CarRange:      engineReq.CarRange,
+	}
+
+	return engine, nil
 }
 
 func (e EnginStore) DeleteEngine(ctx context.Context, id string) (models.Engine, error) {
