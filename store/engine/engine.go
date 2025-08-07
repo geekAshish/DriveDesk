@@ -157,5 +157,56 @@ func (e EnginStore) UpdateEngine(ctx context.Context, id string, engineReq *mode
 }
 
 func (e EnginStore) DeleteEngine(ctx context.Context, id string) (models.Engine, error) {
+	var engine models.Engine;
 
+	tx, err := e.db.BeginTx(ctx, nil)
+	if err != nil {
+		return models.Engine{}, err
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				fmt.Printf("transaction rollback error: %v/n", rbErr)
+			}
+		} else {
+			if cmErr := tx.Commit(); cmErr != nil {
+				fmt.Printf("transaction commit error: %v/n", cmErr)
+			}
+		}
+
+		err = tx.Commit()
+	}()
+
+	err = tx.QueryRowContext(
+		ctx,
+		`SELECT id, displacement, no_of_cyclinder, car_range FROM engine WHERE id=$1`,
+		id).Scan(
+			&engine.EngineID,
+			&engine.Dispacement,
+			&engine.NoOfCylinders,
+			&engine.CarRange,
+		)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Engine{}, errors.New("engine with id not found")
+		}
+		return models.Engine{}, err
+	}
+
+	result, err := tx.ExecContext(ctx, `DELETE FROM engine WHERE id=$1`, id)
+	if err != nil {
+		return models.Engine{}, err
+	}
+
+	rowAffected, err := result.RowsAffected()
+	if err != nil {
+		return models.Engine{}, err
+	}
+	if rowAffected == 0 {
+		return models.Engine{}, errors.New("engine with id not found")
+	}
+
+	return engine, nil;
 }
