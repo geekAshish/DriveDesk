@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -11,6 +12,8 @@ type Engine struct {
 	Dispacement   float64   `json:"dispacement"`
 	NoOfCylinders float64   `json:"no_of_cylinders"`
 	CarRange      float64   `json:"car_range"`
+	CreateAt      time.Time `json:"created_at"`
+	UpdateAt      time.Time `json:"updated_at"`
 }
 
 type EngineRequest struct {
