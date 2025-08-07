@@ -103,7 +103,7 @@ func (e EnginStore) CreateEngine(ctx context.Context, engineReq *models.EngineRe
 func (e EnginStore) UpdateEngine(ctx context.Context, id string, engineReq *models.EngineRequest) (models.Engine, error) {
 	enginID, err := uuid.Parse(id);
 	if err != nil {
-		return models.Engine{}, fmt.Errorf("invalid engine id format: %w", id)
+		return models.Engine{}, fmt.Errorf("invalid engine id format: %s", id)
 	}
 
 	tx, err := e.db.BeginTx(ctx, nil)
