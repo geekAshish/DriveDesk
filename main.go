@@ -42,6 +42,9 @@ func main() {
 
 	router := mux.NewRouter()
 
+	// Middleware
+	// router.Use(middleware.AuthMiddleware)
+
 	// schemaFile := "store/schema.sql"
 	// if err := executeSchemaFile(db, schemaFile); err != nil {
 	// 	log.Fatal("error while executing the schema file: ", err)
