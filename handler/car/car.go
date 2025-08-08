@@ -120,3 +120,47 @@ func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 		log.Println("ERROR: ", err)
 	}
 }
+
+func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context();
+	params := mux.Vars(r);
+	id := params["id"];
+
+	body, err := io.ReadAll(r.Body);
+	if err != nil {
+		log.Println("ERROR READING REQUEST: ", err);
+		w.WriteHeader(http.StatusInternalServerError) 
+		return
+	}
+
+	var carReq models.CarRequest;
+	err = json.Unmarshal(body, &carReq)
+	if err != nil {
+		log.Println("ERROR: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	updatedCar, err := h.service.UpdateCar(ctx, id, &carReq)
+	if err != nil {
+		log.Println("ERROR WHILE UPDATING THE CART: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	responseBody, err := json.Marshal(updatedCar);
+	if err != nil {
+		log.Println("ERROR: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "applilcation/json");
+	w.WriteHeader(http.StatusOK)
+
+	// write the response body
+	_, err = w.Write(responseBody);
+	if err != nil {
+		log.Println("ERROR: ", err)
+	}
+}
