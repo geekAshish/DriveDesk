@@ -1,0 +1,37 @@
+version: '3.8'
+
+
+services:
+  app:
+    build:
+    ports:
+      - "8080:8080"
+    enviroment:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: postgress
+      DB_PASSWORD: 12345
+      DB_NAME: postgress
+      depends_on:
+        - db
+
+  db:
+    build:
+      context: db
+      dockerfile: Dockerfile
+    enviroment:
+      POSTGRESS_USER: postgress
+      POSTGRESS_PASSWORD: 12345
+      POSTGRESS_DB: postgress
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgress-data: /var/lib/postgresql/data
+  
+  volumes:
+    postgres-data:
+
+
+
+
+25217
