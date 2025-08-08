@@ -11,7 +11,7 @@ import (
 var jwtKey = []byte("some_value")
 
 type Claims struct {
-	UserName string `json:username`
+	UserName string `json:"username"`
 	jwt.RegisteredClaims
 }
 

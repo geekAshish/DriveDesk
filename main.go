@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/geekAshish/DriveDesk/driver"
+	"github.com/geekAshish/DriveDesk/middleware"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
@@ -19,6 +20,7 @@ import (
 
 	carHandler "github.com/geekAshish/DriveDesk/handler/car"
 	engineHandler "github.com/geekAshish/DriveDesk/handler/engine"
+	loginHandler "github.com/geekAshish/DriveDesk/handler/login"
 )
 
 func main() {
@@ -42,24 +44,26 @@ func main() {
 
 	router := mux.NewRouter()
 
-	// Middleware
-	// router.Use(middleware.AuthMiddleware)
-
 	// schemaFile := "store/schema.sql"
 	// if err := executeSchemaFile(db, schemaFile); err != nil {
 	// 	log.Fatal("error while executing the schema file: ", err)
 	// }
+	router.HandleFunc("/login", loginHandler.LoginHandler).Methods("POST")
 
-	router.HandleFunc("/cars/{id}", carHandler.GetCarById).Methods("GET")
-	router.HandleFunc("/cars", carHandler.GetCarByBrand).Methods("GET")
-	router.HandleFunc("/cars", carHandler.CreateCar).Methods("POST")
-	router.HandleFunc("/cars/{id}", carHandler.UpdateCar).Methods("PUT")
-	router.HandleFunc("/cars/{id}", carHandler.DeleteCar).Methods("DELETE")
+	// Middleware
+	protected := router.PathPrefix("/").Subrouter()
+	protected.Use(middleware.AuthMiddleware)
 
-	router.HandleFunc("/engine/{id}", engineHandler.GetEngineById).Methods("GET")
-	router.HandleFunc("/engine", engineHandler.CreateEngine).Methods("POST")
-	router.HandleFunc("/engine/{id}", engineHandler.UpdateEngine).Methods("PUT")
-	router.HandleFunc("/engine/{id}", engineHandler.DeleteEngine).Methods("DELETE")
+	protected.HandleFunc("/cars/{id}", carHandler.GetCarById).Methods("GET")
+	protected.HandleFunc("/cars", carHandler.GetCarByBrand).Methods("GET")
+	protected.HandleFunc("/cars", carHandler.CreateCar).Methods("POST")
+	protected.HandleFunc("/cars/{id}", carHandler.UpdateCar).Methods("PUT")
+	protected.HandleFunc("/cars/{id}", carHandler.DeleteCar).Methods("DELETE")
+
+	protected.HandleFunc("/engine/{id}", engineHandler.GetEngineById).Methods("GET")
+	protected.HandleFunc("/engine", engineHandler.CreateEngine).Methods("POST")
+	protected.HandleFunc("/engine/{id}", engineHandler.UpdateEngine).Methods("PUT")
+	protected.HandleFunc("/engine/{id}", engineHandler.DeleteEngine).Methods("DELETE")
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -71,9 +75,8 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, router))
 }
 
-
 func executeSchemaFile(db *sql.DB, filename string) error {
-	sqlFile, err := os.ReadFile(filename);
+	sqlFile, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
