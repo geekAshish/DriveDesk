@@ -23,7 +23,7 @@ func InitDB() {
 	fmt.Println("waiting for database connection")
 	time.Sleep(5 * time.Second)
 
-	db, err := sql.Open("postgress", connStr)
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatalf("ERROR OPENING DATABASE : %v", err)
 	}
