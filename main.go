@@ -1,16 +1,25 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/geekAshish/DriveDesk/driver"
 	"github.com/geekAshish/DriveDesk/middleware"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	carService "github.com/geekAshish/DriveDesk/service/car"
 	carStore "github.com/geekAshish/DriveDesk/store/car"
@@ -28,6 +37,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
+	
+	traceProvider, err := startTracing()
+	if err != nil {
+		log.Fatalf("Error to start tracing : %v", err)
+	}
+	
+	defer func() {
+		if err := traceProvider.Shutdown(context.Background()); err != nil {
+			log.Fatalf("Error to shutdown tracing : %v", err)
+		}
+	}()
 
 	driver.InitDB()
 	defer driver.CloseDB()
@@ -87,4 +107,39 @@ func executeSchemaFile(db *sql.DB, filename string) error {
 	}
 
 	return nil
+}
+
+func startTracing() (*trace.TracerProvider, error) {
+	header := map[string]string{
+		"Content-Type": "application/json",
+	}
+
+	expoter, err := otlptrace.New(
+		context.Background(),
+		otlptracehttp.NewClient(
+			otlptracehttp.WithEndpoint("jaeger:4318"),
+			otlptracehttp.WithHeaders(header),
+			otlptracehttp.WithInsecure(),
+		),
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error creating new exporter %w", &err)
+	}
+
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(
+			expoter,
+			sdktrace.WithMaxExportBatchSize(sdktrace.DefaultMaxExportBatchSize),
+			sdktrace.WithBatchTimeout(sdktrace.DefaultScheduleDelay*time.Millisecond),
+		),
+		sdktrace.WithResource(
+			resource.NewWithAttributes(
+				semconv.SchemaURL,
+				semconv.ServiceNameKey.String("CarZone"),
+			),
+		),
+	)
+
+	return tracerProvider, nil
 }
