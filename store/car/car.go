@@ -178,7 +178,7 @@ func (s Store) CreateCar(ctx context.Context, carReq *models.CarRequest) (models
 	query := `
 	INSERT INTO cars (id, name, year, brand, fuel_type, price, engine_id, created_at, updated_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	RETURN id name year brand fuel_type price created_at updated_at
+	RETURNING id name year brand fuel_type price created_at updated_at
 	`
 
 	err = tx.QueryRowContext(ctx, query,
@@ -232,7 +232,7 @@ func (s Store) UpdateCar(ctx context.Context, id string, carReq *models.CarReque
 	UPDATE cars
 	SET name = $2, year = $3, brand = $4, fuel_type = $5, price = $6, engine_id = $7, updated_at = $8
 	WHERE id = $1
-	RETURN id, name, year, brand, fuel_type, price, created_at, updated_at
+	RETURNING id, name, year, brand, fuel_type, price, created_at, updated_at
 	`
 
 	err = tx.QueryRowContext(ctx, query,

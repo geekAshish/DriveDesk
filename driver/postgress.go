@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 var db *sql.DB
@@ -23,7 +25,8 @@ func InitDB() {
 	fmt.Println("waiting for database connection")
 	time.Sleep(5 * time.Second)
 
-	db, err := sql.Open("postgres", connStr)
+	var err error
+	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatalf("ERROR OPENING DATABASE : %v", err)
 	}
@@ -41,7 +44,9 @@ func GetDB() *sql.DB {
 }
 
 func CloseDB() {
-	if err := db.Close(); err != nil {
-		log.Fatalf("Error closing the database : %v", err)
+	if db != nil {
+		if err := db.Close(); err != nil {
+			log.Fatalf("Error closing the database : %v", err)
+		}
 	}
 }

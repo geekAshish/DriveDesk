@@ -42,10 +42,10 @@ func main() {
 
 	router := mux.NewRouter()
 
-	schemaFile := "store/schema.sql"
-	if err := executeSchemaFile(db, schemaFile); err != nil {
-		log.Fatal("error while executing the schema file: ", err)
-	}
+	// schemaFile := "store/schema.sql"
+	// if err := executeSchemaFile(db, schemaFile); err != nil {
+	// 	log.Fatal("error while executing the schema file: ", err)
+	// }
 
 	router.HandleFunc("/cars/{id}", carHandler.GetCarById).Methods("GET")
 	router.HandleFunc("/cars", carHandler.GetCarByBrand).Methods("GET")
