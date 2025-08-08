@@ -8,6 +8,7 @@ import (
 
 	"github.com/geekAshish/DriveDesk/models"
 	"github.com/geekAshish/DriveDesk/service"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -124,6 +125,51 @@ func (h *EngineHandler) UpdateEngine(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("ERROR: ", err);
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "applilcation/json");
+	w.WriteHeader(http.StatusOK)
+
+	// write the response body
+	_, err = w.Write(responseBody);
+	if err != nil {
+		log.Println("ERROR: ", err)
+	}
+}
+
+func (h *EngineHandler) DeleteEngine(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context();
+	params := mux.Vars(r);
+	id := params["id"];
+
+
+	deletedEngine, err := h.service.DeleteEngine(ctx, id);
+	if err != nil {
+		log.Println("error deleting engine : ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		response := map[string]string {"error": "Invalid ID or Engine not available"};
+		jsonResponse, _ := json.Marshal(response)
+		_, _ = w.Write(jsonResponse)
+		return
+	}
+
+	// check if engine was deleted successfully
+	if deletedEngine.EngineID == uuid.Nil {
+		w.WriteHeader(http.StatusNotFound)
+		response := map[string]string {"error": "Engine not found"};
+		jsonResponse, _ := json.Marshal(response)
+		_, _ = w.Write(jsonResponse)
+		return
+	}
+
+	responseBody, err := json.Marshal(deletedEngine)
+	if err != nil {
+		log.Println("Error while marshalling deleted engine", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		response := map[string]string {"error": "Internal server error"};
+		jsonResponse, _ := json.Marshal(response)
+		_, _ = w.Write(jsonResponse)
 		return
 	}
 
