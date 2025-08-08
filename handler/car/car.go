@@ -2,9 +2,11 @@ package car
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 
+	"github.com/geekAshish/DriveDesk/models"
 	"github.com/geekAshish/DriveDesk/service"
 	"github.com/gorilla/mux"
 )
@@ -72,6 +74,48 @@ func (h *CarHandler) GetCarByBrand(w http.ResponseWriter, r *http.Request) {
 
 	// write the response body
 	_, err = w.Write(body);
+	if err != nil {
+		log.Println("ERROR: ", err)
+	}
+}
+
+func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context();
+
+	body, err := io.ReadAll(r.Body);
+	if err != nil {
+		log.Println("ERROR: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var carReq models.CarRequest;
+	err = json.Unmarshal(body, &carReq)
+	if err != nil {
+		log.Println("ERROR: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	createdCar, err := h.service.CreateCar(ctx, &carReq)
+	if err != nil {
+		log.Println("ERROR: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	responseBody, err := json.Marshal(createdCar);
+	if err != nil {
+		log.Println("ERROR: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "applilcation/json");
+	w.WriteHeader(http.StatusCreated)
+
+	// write the response body
+	_, err = w.Write(responseBody);
 	if err != nil {
 		log.Println("ERROR: ", err)
 	}
