@@ -92,3 +92,47 @@ func (h *EngineHandler) CreateEngine(w http.ResponseWriter, r *http.Request) {
 		log.Println("ERROR: ", err)
 	}
 }
+
+func (h *EngineHandler) UpdateEngine(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context();
+	params := mux.Vars(r);
+	id := params["id"];
+
+	body, err := io.ReadAll(r.Body);
+	if err != nil {
+		log.Println("ERROR READING REQUEST: ", err);
+		w.WriteHeader(http.StatusInternalServerError) 
+		return
+	}
+
+	var engineReq models.EngineRequest;
+	err = json.Unmarshal(body, &engineReq)
+	if err != nil {
+		log.Println("ERROR: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	updatedEngine, err := h.service.UpdateEngine(ctx, id, &engineReq)
+	if err != nil {
+		log.Println("ERROR WHILE UPDATING THE Engine: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	responseBody, err := json.Marshal(updatedEngine);
+	if err != nil {
+		log.Println("ERROR: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "applilcation/json");
+	w.WriteHeader(http.StatusOK)
+
+	// write the response body
+	_, err = w.Write(responseBody);
+	if err != nil {
+		log.Println("ERROR: ", err)
+	}
+}
