@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -41,6 +42,11 @@ func main() {
 
 	router := mux.NewRouter()
 
+	schemaFile := "store/schema.sql"
+	if err := executeSchemaFile(db, schemaFile); err != nil {
+		log.Fatal("error while executing the schema file: ", err)
+	}
+
 	router.HandleFunc("/cars/{id}", carHandler.GetCarById).Methods("GET")
 	router.HandleFunc("/cars", carHandler.GetCarByBrand).Methods("GET")
 	router.HandleFunc("/cars", carHandler.CreateCar).Methods("POST")
@@ -60,4 +66,19 @@ func main() {
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Server listning on : %s", addr)
 	log.Fatal(http.ListenAndServe(addr, router))
+}
+
+
+func executeSchemaFile(db *sql.DB, filename string) error {
+	sqlFile, err := os.ReadFile(filename);
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(string(sqlFile))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
