@@ -164,3 +164,34 @@ func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 		log.Println("ERROR: ", err)
 	}
 }
+
+func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context();
+
+	params := mux.Vars(r);
+	id := params["id"]
+
+	deleteCar, err := h.service.DeleteCar(ctx, id);
+	if err != nil {
+		log.Println("ERROR WHILE DELETEING THE CART: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	responseBody, err := json.Marshal(deleteCar);
+	if err != nil {
+		log.Println("ERROR: ", err);
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "applilcation/json");
+	w.WriteHeader(http.StatusOK)
+
+	// write the response body
+	_, err = w.Write(responseBody);
+	if err != nil {
+		log.Println("ERROR: ", err)
+	}
+
+}
