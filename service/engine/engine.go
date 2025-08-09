@@ -5,6 +5,7 @@ import (
 
 	"github.com/geekAshish/DriveDesk/models"
 	"github.com/geekAshish/DriveDesk/store"
+	"go.opentelemetry.io/otel"
 )
 
 type EngineService struct {
@@ -18,6 +19,10 @@ func NewEngineService(store store.EngineStoreInterface) *EngineService {
 }
 
 func (s *EngineService) GetEngineById(ctx context.Context, id string) (*models.Engine, error) {
+	tracer := otel.Tracer("EngineService")
+	ctx, span := tracer.Start(ctx, "GetEngineById-Service")
+	defer span.End()
+
 	engine, err := s.store.GetEngineById(ctx, id)
 	if err != nil {
 		return nil, err
@@ -27,11 +32,15 @@ func (s *EngineService) GetEngineById(ctx context.Context, id string) (*models.E
 }
 
 func (s *EngineService) CreateEngine(ctx context.Context, engineReq *models.EngineRequest) (*models.Engine, error) {
+	tracer := otel.Tracer("EngineService")
+	ctx, span := tracer.Start(ctx, "CreateEngine-Service")
+	defer span.End()
+
 	if err := models.ValidateEngineRequest(*engineReq); err != nil {
 		return nil, err
 	}
 
-	createEngine, err := s.store.CreateEngine(ctx, engineReq);
+	createEngine, err := s.store.CreateEngine(ctx, engineReq)
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +49,10 @@ func (s *EngineService) CreateEngine(ctx context.Context, engineReq *models.Engi
 }
 
 func (s *EngineService) UpdateEngine(ctx context.Context, id string, engineReq *models.EngineRequest) (*models.Engine, error) {
+	tracer := otel.Tracer("EngineService")
+	ctx, span := tracer.Start(ctx, "UpdateEngine-Service")
+	defer span.End()
+
 	if err := models.ValidateEngineRequest(*engineReq); err != nil {
 		return nil, err
 	}
@@ -49,10 +62,13 @@ func (s *EngineService) UpdateEngine(ctx context.Context, id string, engineReq *
 		return nil, err
 	}
 
-	return &updateEngine, nil;
+	return &updateEngine, nil
 }
 
 func (s *EngineService) DeleteEngine(ctx context.Context, id string) (*models.Engine, error) {
+	tracer := otel.Tracer("EngineService")
+	ctx, span := tracer.Start(ctx, "DeleteEngine-Service")
+	defer span.End()
 
 	deleteEngine, err := s.store.DeleteEngine(ctx, id)
 	if err != nil {
