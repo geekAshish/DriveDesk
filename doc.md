@@ -20,3 +20,11 @@ go get go.opentelemetry.io/otel/sdk/trace
 run doker-componse up --build
 
 and go to : http://localhost:16686/search
+
+
+Prometheus and grafana
+
+
+you can use pre desinged metrics for each programing langusge , jsut copy the code and imaport in grafana
+
+
