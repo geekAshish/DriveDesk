@@ -9,6 +9,7 @@ import (
 	"github.com/geekAshish/DriveDesk/models"
 	"github.com/geekAshish/DriveDesk/service"
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/otel"
 )
 
 type CarHandler struct {
@@ -22,7 +23,11 @@ func NewCarHandler(service service.CarServiceInterface) *CarHandler {
 }
 
 func (h *CarHandler) GetCarById(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	tracer := otel.Tracer("CarHandler")
+	ctx, span := tracer.Start(r.Context(), "GetCarById-Handler")
+	defer span.End();
+
+	// ctx := r.Context() // now we will use tracer context
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -32,7 +37,7 @@ func (h *CarHandler) GetCarById(w http.ResponseWriter, r *http.Request) {
 		log.Println("ERROR: ", err)
 		return
 	}
-	
+
 	body, err := json.Marshal(res)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -40,22 +45,26 @@ func (h *CarHandler) GetCarById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "applilcation/json");
+	w.Header().Set("Content-Type", "applilcation/json")
 	w.WriteHeader(http.StatusOK)
 
 	// write the response body
-	_, err = w.Write(body);
+	_, err = w.Write(body)
 	if err != nil {
 		log.Println("ERROR: ", err)
 	}
 }
 
 func (h *CarHandler) GetCarByBrand(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context();
+	tracer := otel.Tracer("CarHandler")
+	ctx, span := tracer.Start(r.Context(), "GetCarByBrand-Handler")
+	defer span.End();
+
+	// ctx := r.Context()
 	brand := r.URL.Query().Get("brand")
 	isEngine := r.URL.Query().Get("isEngine") == "true"
 
-	res, err := h.service.GetCarByBrand(ctx, brand, isEngine);
+	res, err := h.service.GetCarByBrand(ctx, brand, isEngine)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println("ERROR: ", err)
@@ -69,127 +78,141 @@ func (h *CarHandler) GetCarByBrand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "applilcation/json");
+	w.Header().Set("Content-Type", "applilcation/json")
 	w.WriteHeader(http.StatusOK)
 
 	// write the response body
-	_, err = w.Write(body);
+	_, err = w.Write(body)
 	if err != nil {
 		log.Println("ERROR: ", err)
 	}
 }
 
 func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context();
+	tracer := otel.Tracer("CarHandler")
+	ctx, span := tracer.Start(r.Context(), "CreateCar-Handler")
+	defer span.End();
 
-	body, err := io.ReadAll(r.Body);
+
+	// ctx := r.Context()
+
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Println("ERROR: ", err);
+		log.Println("ERROR: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	var carReq models.CarRequest;
+	var carReq models.CarRequest
 	err = json.Unmarshal(body, &carReq)
 	if err != nil {
-		log.Println("ERROR: ", err);
+		log.Println("ERROR: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	createdCar, err := h.service.CreateCar(ctx, &carReq)
 	if err != nil {
-		log.Println("ERROR: ", err);
+		log.Println("ERROR: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	responseBody, err := json.Marshal(createdCar);
+	responseBody, err := json.Marshal(createdCar)
 	if err != nil {
-		log.Println("ERROR: ", err);
+		log.Println("ERROR: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "applilcation/json");
+	w.Header().Set("Content-Type", "applilcation/json")
 	w.WriteHeader(http.StatusCreated)
 
 	// write the response body
-	_, err = w.Write(responseBody);
+	_, err = w.Write(responseBody)
 	if err != nil {
 		log.Println("ERROR: ", err)
 	}
 }
 
 func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context();
-	params := mux.Vars(r);
-	id := params["id"];
+	tracer := otel.Tracer("CarHandler")
+	ctx, span := tracer.Start(r.Context(), "UpdateCar-Handler")
+	defer span.End();
 
-	body, err := io.ReadAll(r.Body);
+
+	// ctx := r.Context()
+	params := mux.Vars(r)
+	id := params["id"]
+
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Println("ERROR READING REQUEST: ", err);
-		w.WriteHeader(http.StatusInternalServerError) 
+		log.Println("ERROR READING REQUEST: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	var carReq models.CarRequest;
+	var carReq models.CarRequest
 	err = json.Unmarshal(body, &carReq)
 	if err != nil {
-		log.Println("ERROR: ", err);
+		log.Println("ERROR: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	updatedCar, err := h.service.UpdateCar(ctx, id, &carReq)
 	if err != nil {
-		log.Println("ERROR WHILE UPDATING THE CART: ", err);
+		log.Println("ERROR WHILE UPDATING THE CART: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	responseBody, err := json.Marshal(updatedCar);
+	responseBody, err := json.Marshal(updatedCar)
 	if err != nil {
-		log.Println("ERROR: ", err);
+		log.Println("ERROR: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "applilcation/json");
+	w.Header().Set("Content-Type", "applilcation/json")
 	w.WriteHeader(http.StatusOK)
 
 	// write the response body
-	_, err = w.Write(responseBody);
+	_, err = w.Write(responseBody)
 	if err != nil {
 		log.Println("ERROR: ", err)
 	}
 }
 
 func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context();
+	tracer := otel.Tracer("CarHandler")
+	ctx, span := tracer.Start(r.Context(), "DeleteCar-Handler")
+	defer span.End();
 
-	params := mux.Vars(r);
+	// ctx := r.Context()
+
+	params := mux.Vars(r)
 	id := params["id"]
 
-	deleteCar, err := h.service.DeleteCar(ctx, id);
+	deleteCar, err := h.service.DeleteCar(ctx, id)
 	if err != nil {
-		log.Println("ERROR WHILE DELETEING THE CART: ", err);
+		log.Println("ERROR WHILE DELETEING THE CART: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	responseBody, err := json.Marshal(deleteCar);
+	responseBody, err := json.Marshal(deleteCar)
 	if err != nil {
-		log.Println("ERROR: ", err);
+		log.Println("ERROR: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "applilcation/json");
+	w.Header().Set("Content-Type", "applilcation/json")
 	w.WriteHeader(http.StatusOK)
 
 	// write the response body
-	_, err = w.Write(responseBody);
+	_, err = w.Write(responseBody)
 	if err != nil {
 		log.Println("ERROR: ", err)
 	}

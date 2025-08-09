@@ -14,11 +14,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	carService "github.com/geekAshish/DriveDesk/service/car"
@@ -37,17 +38,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
-	
+
 	traceProvider, err := startTracing()
 	if err != nil {
 		log.Fatalf("Error to start tracing : %v", err)
 	}
-	
+
 	defer func() {
 		if err := traceProvider.Shutdown(context.Background()); err != nil {
 			log.Fatalf("Error to shutdown tracing : %v", err)
 		}
 	}()
+
+	otel.SetTracerProvider(traceProvider)
 
 	driver.InitDB()
 	defer driver.CloseDB()
@@ -63,6 +66,9 @@ func main() {
 	engineHandler := engineHandler.NewEngineHandler(engineService)
 
 	router := mux.NewRouter()
+
+	// otel middleware for tracing
+	router.Use(otelmux.Middleware("DriveDesk"))
 
 	// schemaFile := "store/schema.sql"
 	// if err := executeSchemaFile(db, schemaFile); err != nil {
@@ -127,13 +133,13 @@ func startTracing() (*trace.TracerProvider, error) {
 		return nil, fmt.Errorf("Error creating new exporter %w", &err)
 	}
 
-	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(
+	tracerProvider := trace.NewTracerProvider(
+		trace.WithBatcher(
 			expoter,
-			sdktrace.WithMaxExportBatchSize(sdktrace.DefaultMaxExportBatchSize),
-			sdktrace.WithBatchTimeout(sdktrace.DefaultScheduleDelay*time.Millisecond),
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+			trace.WithBatchTimeout(trace.DefaultScheduleDelay*time.Millisecond),
 		),
-		sdktrace.WithResource(
+		trace.WithResource(
 			resource.NewWithAttributes(
 				semconv.SchemaURL,
 				semconv.ServiceNameKey.String("CarZone"),
