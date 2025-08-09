@@ -8,6 +8,7 @@ import (
 
 	"github.com/geekAshish/DriveDesk/models"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 )
 
 type EnginStore struct {
@@ -19,6 +20,10 @@ func New(db *sql.DB) *EnginStore {
 }
 
 func (e EnginStore) GetEngineById(ctx context.Context, id string) (models.Engine, error) {
+	tracer := otel.Tracer("EngineStore")
+	ctx, span := tracer.Start(ctx, "GetEngineById-Store")
+	defer span.End()
+
 	var engine models.Engine
 
 	// begin the transaction , atomic [if we have any error in the middle, we will rollback]
@@ -59,6 +64,10 @@ func (e EnginStore) GetEngineById(ctx context.Context, id string) (models.Engine
 }
 
 func (e EnginStore) CreateEngine(ctx context.Context, engineReq *models.EngineRequest) (models.Engine, error) {
+	tracer := otel.Tracer("EngineStore")
+	ctx, span := tracer.Start(ctx, "CreateEngine-Store")
+	defer span.End()
+
 	tx, err := e.db.BeginTx(ctx, nil)
 	if err != nil {
 		return models.Engine{}, err
@@ -101,7 +110,11 @@ func (e EnginStore) CreateEngine(ctx context.Context, engineReq *models.EngineRe
 }
 
 func (e EnginStore) UpdateEngine(ctx context.Context, id string, engineReq *models.EngineRequest) (models.Engine, error) {
-	enginID, err := uuid.Parse(id);
+	tracer := otel.Tracer("EngineStore")
+	ctx, span := tracer.Start(ctx, "UpdateEngine-Store")
+	defer span.End()
+
+	enginID, err := uuid.Parse(id)
 	if err != nil {
 		return models.Engine{}, fmt.Errorf("invalid engine id format: %s", id)
 	}
@@ -134,7 +147,7 @@ func (e EnginStore) UpdateEngine(ctx context.Context, id string, engineReq *mode
 	)
 
 	if err != nil {
-		return models.Engine{}, err;
+		return models.Engine{}, err
 	}
 
 	rowAffected, err := result.RowsAffected()
@@ -147,7 +160,7 @@ func (e EnginStore) UpdateEngine(ctx context.Context, id string, engineReq *mode
 	}
 
 	engine := models.Engine{
-		EngineID:      enginID, 
+		EngineID:      enginID,
 		Dispacement:   engineReq.Dispacement,
 		NoOfCylinders: engineReq.NoOfCylinders,
 		CarRange:      engineReq.CarRange,
@@ -157,7 +170,11 @@ func (e EnginStore) UpdateEngine(ctx context.Context, id string, engineReq *mode
 }
 
 func (e EnginStore) DeleteEngine(ctx context.Context, id string) (models.Engine, error) {
-	var engine models.Engine;
+	tracer := otel.Tracer("EngineStore")
+	ctx, span := tracer.Start(ctx, "DeleteEngine-Store")
+	defer span.End()
+
+	var engine models.Engine
 
 	tx, err := e.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -182,11 +199,11 @@ func (e EnginStore) DeleteEngine(ctx context.Context, id string) (models.Engine,
 		ctx,
 		`SELECT id, displacement, no_of_cyclinder, car_range FROM engine WHERE id=$1`,
 		id).Scan(
-			&engine.EngineID,
-			&engine.Dispacement,
-			&engine.NoOfCylinders,
-			&engine.CarRange,
-		)
+		&engine.EngineID,
+		&engine.Dispacement,
+		&engine.NoOfCylinders,
+		&engine.CarRange,
+	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -208,5 +225,5 @@ func (e EnginStore) DeleteEngine(ctx context.Context, id string) (models.Engine,
 		return models.Engine{}, errors.New("engine with id not found")
 	}
 
-	return engine, nil;
+	return engine, nil
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/geekAshish/DriveDesk/models"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 )
 
 type Store struct {
@@ -19,6 +20,10 @@ func New(db *sql.DB) Store {
 }
 
 func (s Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "GetCarById-Store")
+	defer span.End()
+
 	car := models.Car{}
 
 	query := `SELECT c.id, c.brand, c.model, c.year, c.color, c.price, c.is_engine c.created_at, c.updated_at e.id e.displacement e.no_of_cylinders e.fuel_type e.car_range FROM cars c LEFT JOIN engines e ON c.engine_id = e.id WHERE c.id = $1`
@@ -53,6 +58,10 @@ func (s Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
 }
 
 func (s Store) GetCarByBrand(ctx context.Context, brand string, isEngine bool) ([]models.Car, error) {
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "GetCarByBrand-Store")
+	defer span.End()
+
 	var cars = []models.Car{}
 	var query string
 
@@ -132,6 +141,10 @@ func (s Store) GetCarByBrand(ctx context.Context, brand string, isEngine bool) (
 }
 
 func (s Store) CreateCar(ctx context.Context, carReq *models.CarRequest) (models.Car, error) {
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "CreateCar-Store")
+	defer span.End()
+
 	var createdCar models.Car
 	var engineId uuid.UUID
 
@@ -172,7 +185,7 @@ func (s Store) CreateCar(ctx context.Context, carReq *models.CarRequest) (models
 			return
 		}
 
-		err = tx.Commit();
+		err = tx.Commit()
 	}()
 
 	query := `
@@ -204,14 +217,18 @@ func (s Store) CreateCar(ctx context.Context, carReq *models.CarRequest) (models
 	)
 
 	if err != nil {
-		return createdCar, err;
+		return createdCar, err
 	}
 
-	return createdCar, nil;
+	return createdCar, nil
 }
 
 func (s Store) UpdateCar(ctx context.Context, id string, carReq *models.CarRequest) (models.Car, error) {
-	var updatedCar models.Car;
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "UpdateCar-Store")
+	defer span.End()
+
+	var updatedCar models.Car
 
 	// begin the transaction , atomic [if we have any error in the middle, we will rollback]
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -225,7 +242,7 @@ func (s Store) UpdateCar(ctx context.Context, id string, carReq *models.CarReque
 			return
 		}
 
-		err = tx.Commit();
+		err = tx.Commit()
 	}()
 
 	query := `
@@ -248,7 +265,7 @@ func (s Store) UpdateCar(ctx context.Context, id string, carReq *models.CarReque
 		&updatedCar.ID,
 		&updatedCar.Name,
 		&updatedCar.Year,
-		&updatedCar.Brand, 
+		&updatedCar.Brand,
 		&updatedCar.FuelType,
 		&updatedCar.Engine.EngineID,
 		&updatedCar.Price,
@@ -257,19 +274,23 @@ func (s Store) UpdateCar(ctx context.Context, id string, carReq *models.CarReque
 	)
 
 	if err != nil {
-		return updatedCar, err;
+		return updatedCar, err
 	}
 
-	return updatedCar, nil; 
+	return updatedCar, nil
 }
 
 func (s Store) DeleteCar(ctx context.Context, id string) (models.Car, error) {
-	var deletedCar models.Car;
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "DeleteCar-Store")
+	defer span.End()
+
+	var deletedCar models.Car
 
 	// begin the transaction , atomic [if we have any error in the middle, we will rollback]
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return deletedCar, err;
+		return deletedCar, err
 	}
 
 	defer func() {
@@ -278,14 +299,14 @@ func (s Store) DeleteCar(ctx context.Context, id string) (models.Car, error) {
 			return
 		}
 
-		err = tx.Commit();
+		err = tx.Commit()
 	}()
 
 	query := `
 	SELECT id, name, year, brand, fuel_type, price, created_at, updated_at
 	FROM car
 	WHERE id = $1
-	`;
+	`
 
 	err = tx.QueryRowContext(ctx, query, id).Scan(
 		&deletedCar.ID,
@@ -295,7 +316,7 @@ func (s Store) DeleteCar(ctx context.Context, id string) (models.Car, error) {
 		&deletedCar.FuelType,
 		&deletedCar.Price,
 		&deletedCar.CreateAt,
-		&deletedCar.UpdateAt, 
+		&deletedCar.UpdateAt,
 	)
 
 	if err != nil {
@@ -317,7 +338,7 @@ func (s Store) DeleteCar(ctx context.Context, id string) (models.Car, error) {
 
 	if rowsAffected == 0 {
 		return models.Car{}, errors.New("no car deleted")
-	} 
+	}
 
 	return deletedCar, nil
 }
